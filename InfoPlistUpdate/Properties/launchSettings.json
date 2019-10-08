@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "InfoPlistUpdate": {
+      "commandName": "Project",
+      "commandLineArgs": "\"C:\\Projects\\InfoPlistUpdate\\InfoPlistUpdate\\TestFiles\\Info.plist\""
+    }
+  }
+}
