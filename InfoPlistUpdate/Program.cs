@@ -8,8 +8,6 @@ namespace InfoPlistUpdate
     {
         static void Main(string[] args)
         {
-            var cd = Environment.CurrentDirectory;
-
             if (args.Length != 1)
             {
                 ShowUsage();
