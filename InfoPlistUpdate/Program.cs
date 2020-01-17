@@ -8,6 +8,8 @@ namespace InfoPlistUpdate
     {
         static void Main(string[] args)
         {
+            var cd = Environment.CurrentDirectory;
+
             if (args.Length != 1)
             {
                 ShowUsage();
@@ -25,33 +27,64 @@ namespace InfoPlistUpdate
             var xmlDocument = new XmlDocument();
             xmlDocument.Load(filePath);
 
-            IncrementBundleVersion(xmlDocument, filePath);
+            IncrementBundleVersion(xmlDocument);
+            UpdateCopyright(xmlDocument);
+
+            xmlDocument.Save(filePath);
         }
 
-        static void IncrementBundleVersion(XmlDocument xmlDocument, string filePath)
+        static void IncrementBundleVersion(XmlDocument xmlDocument)
         {
-            var bundleVersionKeyNode = xmlDocument.SelectSingleNode("/plist/dict/key[text()='CFBundleVersion']");
-            var bundleVersionValueNode = bundleVersionKeyNode.NextSibling;
-            if (bundleVersionValueNode.Name != "string")
-            {
-                Console.WriteLine("string node expected following CFBundleVersion key");
-            }
+            var valueNode = GetValueNode(xmlDocument, "CFBundleVersion");
 
-            if (!int.TryParse(bundleVersionValueNode.InnerText, out var bundleVersionValue))
+            if (!int.TryParse(valueNode.InnerText, out var bundleVersionValue))
             {
-                Console.WriteLine($"Cannot parse {bundleVersionValueNode.InnerText} as an integer");
+                throw new XmlDocumentException($"Cannot parse {valueNode.InnerText} as an integer");
             }
 
             ++bundleVersionValue;
 
-            bundleVersionValueNode.InnerText = bundleVersionValue.ToString();
+            valueNode.InnerText = bundleVersionValue.ToString();
+        }
 
-            xmlDocument.Save(filePath);
+        static void UpdateCopyright(XmlDocument xmlDocument)
+        {
+            var valueNode = GetValueNode(xmlDocument, "NSHumanReadableCopyright");
+            var year = DateTime.UtcNow.Year;
+            var valueString = $"Copyright {year} Affective Ltd. All rights reserved.";
+            valueNode.InnerText = valueString;
+        }
+
+        static XmlNode GetValueNode(XmlDocument xmlDocument, string key)
+        {
+            var keyNode = GetKeyNode(xmlDocument, key);
+            var valueNode = keyNode.NextSibling;
+            
+            if (valueNode.Name != "string")
+            {
+                throw new XmlDocumentException($"string node expected following {key} key");
+            }
+
+            return valueNode;
+        }
+
+        static XmlNode GetKeyNode(XmlDocument xmlDocument, string key)
+        {
+            var keyNode = xmlDocument.SelectSingleNode($"/plist/dict/key[text()='{key}']");
+            return keyNode;
         }
 
         static void ShowUsage()
         {
             Console.WriteLine("Usage: InfoPlistUpdate <Info.plist file path>");
+        }
+    }
+
+    class XmlDocumentException : Exception
+    {
+        public XmlDocumentException(string s)
+            : base(s)
+        {
         }
     }
 }
